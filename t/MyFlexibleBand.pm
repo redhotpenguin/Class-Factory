@@ -9,15 +9,7 @@ my %TYPES = ();
 sub get_factory_type { return $TYPES{ $_[1] } }
 sub set_factory_type { return $TYPES{ $_[1] } = $_[2] }
 
-sub new {
-    my ( $class, $type, $params ) = @_;
-    my $factory_class = $class->get_factory_class( $type );
-    my $self = bless( {}, $factory_class );
-    return $self->initialize( $params );
-}
-
-
-sub initialize {
+sub init {
     my ( $self, $params ) = @_;
     $self->band_name( $params->{band_name} );
     return $self;
