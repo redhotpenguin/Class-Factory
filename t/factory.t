@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 28;
+use Test::More  tests => 32;
 
 use lib qw( ./t ./lib );
 
@@ -44,6 +44,11 @@ my $country_genre = 'COUNTRY';
         'Added object type super init parameter set' );
     is( $rock->genre(), $rock_genre,
         'Added object type self init parameter set' );
+    is( $rock->get_my_factory, 'MySimpleBand',
+        'Factory class retrievable from object' );
+    is( $rock->get_my_factory_type, 'rock',
+        'Factory type retrievable from object' );
+
 
     my $country = MySimpleBand->new( 'country', { band_name => $country_band } );
     is( ref( $country ), 'MyCountryBand', 'Type of registered object returned' );
@@ -51,6 +56,10 @@ my $country_genre = 'COUNTRY';
         'Registered object type super init parameter set' );
     is( $country->genre(), $country_genre,
         'Registered object type self init parameter set' );
+    is( $country->get_my_factory, 'MySimpleBand',
+        'Factory class retrievable from object' );
+    is( $country->get_my_factory_type, 'country',
+        'Factory type retrievable from object' );
 
     my @loaded_classes_new = MySimpleBand->get_loaded_classes;
     is( scalar @loaded_classes_new, 2, 'Classes loaded after all used' );

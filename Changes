@@ -1,5 +1,11 @@
 Revision history for Perl extension Class::Factory.
 
+1.03  Thu Oct 14 10:08:08 EDT 2004
+
+      - Added 'get_my_factory()' and 'get_my_factory_type()' at
+      suggestion from Srdjan Jankovic.
+
+
 1.02  Tue Oct 12 21:02:04 EDT 2004
 
       - Ensure that new() returns undef if get_factory_class() doesn't

@@ -4,10 +4,11 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.02';
+$Class::Factory::VERSION = '1.03';
 
-my %INCLUDE  = ();
-my %REGISTER = ();
+my %CLASS_BY_FACTORY_AND_TYPE  = ();
+my %FACTORY_INFO_BY_CLASS      = ();
+my %REGISTER                   = ();
 
 # Simple constructor -- override as needed
 
@@ -30,7 +31,8 @@ sub init { return $_[0] }
 sub get_factory_class {
     my ( $item, $object_type ) = @_;
     my $class = ref $item || $item;
-    my $factory_class = $INCLUDE{ $class }->{ $object_type };
+    my $factory_class =
+        $CLASS_BY_FACTORY_AND_TYPE{ $class }->{ $object_type };
     return $factory_class if ( $factory_class );
 
     $factory_class = $REGISTER{ $class }->{ $object_type };
@@ -59,7 +61,8 @@ sub add_factory_type {
                               "'$class': no class defined" );
     }
 
-    my $set_object_class = $INCLUDE{ $class }->{ $object_type };
+    my $set_object_class =
+        $CLASS_BY_FACTORY_AND_TYPE{ $class }->{ $object_type };
     if ( $set_object_class ) {
         $item->factory_log( "Attempt to add type '$object_type' to '$class' ",
                             "redundant; type already exists with class ",
@@ -86,7 +89,15 @@ sub add_factory_type {
             return undef;
         }
     }
-    return $INCLUDE{ $class }->{ $object_type } = $object_class;
+
+    # keep track of what classes have been included so far...
+    $CLASS_BY_FACTORY_AND_TYPE{ $class }->{ $object_type } = $object_class;
+
+    # keep track of what factory and type are associated with a loaded
+    # class...
+    $FACTORY_INFO_BY_CLASS{ $object_class } = [ $class, $object_type ];
+
+    return $object_class;
 }
 
 sub register_factory_type {
@@ -115,15 +126,15 @@ sub register_factory_type {
 sub get_loaded_classes {
     my ( $item ) = @_;
     my $class = ref $item || $item;
-    return () unless ( ref $INCLUDE{ $class } eq 'HASH' );
-    return sort values %{ $INCLUDE{ $class } };
+    return () unless ( ref $CLASS_BY_FACTORY_AND_TYPE{ $class } eq 'HASH' );
+    return sort values %{ $CLASS_BY_FACTORY_AND_TYPE{ $class } };
 }
 
 sub get_loaded_types {
     my ( $item ) = @_;
     my $class = ref $item || $item;
-    return () unless ( ref $INCLUDE{ $class } eq 'HASH' );
-    return sort keys %{ $INCLUDE{ $class } };
+    return () unless ( ref $CLASS_BY_FACTORY_AND_TYPE{ $class } eq 'HASH' );
+    return sort keys %{ $CLASS_BY_FACTORY_AND_TYPE{ $class } };
 }
 
 sub get_registered_classes {
@@ -138,6 +149,32 @@ sub get_registered_types {
     my $class = ref $item || $item;
     return () unless ( ref $REGISTER{ $class } eq 'HASH' );
     return sort keys %{ $REGISTER{ $class } };
+}
+
+# Return the factory class that created $item (which can be an object
+# or class)
+
+sub get_my_factory {
+    my ( $item ) = @_;
+    my $impl_class = ref( $item ) || $item;
+    my $impl_info = $FACTORY_INFO_BY_CLASS{ $impl_class };
+    if ( ref( $impl_info ) eq 'ARRAY' ) {
+        return $impl_info->[0];
+    }
+    return undef;
+}
+
+# Return the type that the factory used to create $item (which can be
+# an object or class)
+
+sub get_my_factory_type {
+    my ( $item ) = @_;
+    my $impl_class = ref( $item ) || $item;
+    my $impl_info = $FACTORY_INFO_BY_CLASS{ $impl_class };
+    if ( ref( $impl_info ) eq 'ARRAY' ) {
+        return $impl_info->[1];
+    }
+    return undef;
 }
 
 ########################################
@@ -193,6 +230,14 @@ Class::Factory - Base class for dynamic factory classes
   my @loaded_types       = My::Factory->get_loaded_types;
   my @registered_classes = My::Factory->get_registered_classes;
   my @registered_types   = My::Factory->get_registered_types;
+
+ # Ask the object created by the factory: Where did I come from?
+ 
+ my $custom_object = My::Factory->new( 'custom' );
+ print "Object was created by factory: ",
+       $custom_object->get_my_factory, " ",
+       "and is of type: ",
+       $custom_object->get_my_factory_type;
 
 =head1 DESCRIPTION
 
@@ -479,6 +524,8 @@ more registering/adding:
 
 =head1 METHODS
 
+=head2 Factory Methods
+
 B<new( $type, @params )>
 
 This is a default constructor you can use. It is quite simple:
@@ -577,6 +624,47 @@ B<factory_error( @message )>
 Used internally instead of C<die> so subclasses can override. Default
 implementation just uses C<die>.
 
+=head2 Implementation Methods
+
+If your implementations -- objects the factory creates -- also inherit
+from the factory they can do a little introspection and tell you where
+they came from. (Inheriting from the factory is a common usage: the
+L<SYNOPSIS> example does it.)
+
+All methods here can be called on either a class or an object.
+
+B<get_my_factory()>
+
+Returns the factory class used to create this object or instances of
+this class. If this class (or object class) hasn't been registered
+with the factory it returns undef.
+
+So with our L<SYNOPSIS> example we could do:
+
+ my $custom_object = My::Factory->new( 'custom' );
+ print "Object was created by factory ",
+       "'", $custom_object->get_my_factory, "';
+
+which would print:
+
+ Object was created by factory 'My::Factory'
+
+B<get_my_factory_type()>
+
+Returns the type used to by the factory create this object or
+instances of this class. If this class (or object class) hasn't been
+registered with the factory it returns undef.
+
+So with our L<SYNOPSIS> example we could do:
+
+ my $custom_object = My::Factory->new( 'custom' );
+ print "Object is of type ",
+       "'", $custom_object->get_my_factory_type, "'";
+
+which would print:
+
+ Object is of type 'custom'
+
 =head1 COPYRIGHT
 
 Copyright (c) 2002-2004 Chris Winters. All rights reserved.
@@ -596,3 +684,6 @@ Chris Winters E<lt>chris@cwinters.comE<gt>
 
 Eric Andreychek E<lt>eric@openthought.netE<gt> implemented overridable
 log/error capability and prodded the module into a simpler design.
+
+Srdjan Jankovic E<lt>srdjan@catalyst.net.nzE<gt> contributed the idea
+for 'get_my_factory()' and 'get_my_factory_type()'
