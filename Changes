@@ -1,6 +1,21 @@
 Revision history for Perl extension Class::Factory.
 
-1.01  Thu Aug 21 22:08:29 EDT 2003
+1.02  Tue Oct 12 21:02:04 EDT 2004
+
+      - Ensure that new() returns undef if get_factory_class() doesn't
+      work properly and factory_error() is overridden (and the
+      overridden method doesn't die)
+
+      - Relatively minor documentation clarifications and additions
+      spurred by a Perlmonks post:
+
+         http://www.perlmonks.org/index.pl?node_id=398257
+
+      - Added a few more tests to ensure factory_log() and
+      factory_error() working properly
+
+
+1.01  (never released for some reason)
 
       - add_factory_type() checks %INC to see if a class is already
       loaded. This gets rid of any 'Subroutine foo redefined' messages
@@ -17,6 +32,7 @@ Revision history for Perl extension Class::Factory.
 
       It's just cleaner that way.
 
+
 1.00  Mon Oct  7 11:15:50 EDT 2002
 
       - Add overridable logging/errors (Thanks to Eric Andreychek
@@ -30,6 +46,7 @@ Revision history for Perl extension Class::Factory.
       get_registered_types() and get_registered_classes() so you can
       keep track of the factory state.
 
+
 0.03  Sun Feb 10 13:00:20 EST 2002
 
       Added the ability to register a type/class without having
@@ -38,11 +55,13 @@ Revision history for Perl extension Class::Factory.
       bring in a particular class until that type is requested. (See
       POD for details.)
 
+
 0.02  Wed Jan 30 00:22:58 EST 2002
 
       Added simple constructor to be inherited as needed. This
       constructor automatically calls 'init()', not coincidentally the
       name that Class::Base uses. Small variable name changes.
+
 
 0.01  Mon Jan 28 08:35:09 EST 2002
 	

@@ -24,6 +24,19 @@ sub genre {
     return $self->{genre};
 }
 
+# Use these to hold logging/error messages we can inspect later
+
+$MySimpleBand::log_msg   = '';
+$MySimpleBand::error_msg = '';
+
+sub factory_log {
+    shift; $MySimpleBand::log_msg = join( '', @_ );
+}
+
+sub factory_error {
+    shift; $MySimpleBand::error_msg = join( '', @_ );
+}
+
 __PACKAGE__->add_factory_type( rock => 'MyRockBand' );
 __PACKAGE__->register_factory_type( country => 'MyCountryBand' );
 

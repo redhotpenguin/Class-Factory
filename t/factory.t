@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 24;
+use Test::More  tests => 28;
 
 use lib qw( ./t ./lib );
 
@@ -66,5 +66,28 @@ my $country_genre = 'COUNTRY';
         'Proper class returned for registered type' );
     is( MySimpleBand->get_factory_class( 'rock' ), 'MyRockBand',
         'Proper class returned for added type' );
+
+    # reissue an add to get a warning
+    MySimpleBand->add_factory_type( rock => 'MyRockBand' );
+    is( $MySimpleBand::log_msg,
+        "Attempt to add type 'rock' to 'MySimpleBand' redundant; type already exists with class 'MyRockBand'",
+        'Generated correct log message with duplicate factory type added' );
+
+    # reissue a registration to get a warning
+    MySimpleBand->register_factory_type( country => 'MyCountryBand' );
+    is( $MySimpleBand::log_msg,
+        "Attempt to register type 'country' with 'MySimpleBand' is redundant; type registered with class 'MyCountryBand'",
+        'Generated correct log message with duplicate factory type registered' );
+
+    # generate an error message
+    MySimpleBand->add_factory_type( disco => 'SomeKeyboardGuy' );
+    ok( $MySimpleBand::error_msg =~ /^Cannot add factory type 'disco' to class 'MySimpleBand': factory class 'SomeKeyboardGuy' cannot be required:/,
+        'Generated correct error message when adding nonexistent class' );
+
+    # generate an error message when creating an object of a nonexistent class
+    MySimpleBand->register_factory_type( disco => 'SomeKeyboardGuy' );
+    my $disco = MySimpleBand->new( 'disco', { shoes => 'white' } );
+    ok( $MySimpleBand::error_msg =~ /^Cannot add factory type 'disco' to class 'MySimpleBand': factory class 'SomeKeyboardGuy' cannot be required:/,
+        'Generated correct error message when instantiate object with nonexistent class registration' );
 
 }
