@@ -1,5 +1,13 @@
 Revision history for Perl extension Class::Factory.
 
+0.03  Sun Feb 10 13:00:20 EST 2002
+
+      Added the ability to register a type/class without having
+      Class::Factory include it. This is useful for modules that want
+      to know all of their types at startup time but don't want to
+      bring in a particular class until that type is requested. (See
+      POD for details.)
+
 0.02  Wed Jan 30 00:22:58 EST 2002
 
       Added simple constructor to be inherited as needed. This
