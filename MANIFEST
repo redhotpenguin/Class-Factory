@@ -5,7 +5,6 @@ README
 lib/Class/Factory.pm
 t/factory.t
 t/MyCountryBand.pm
-t/MyFlexibleBand.pm
 t/MyRockBand.pm
 t/MySimpleBand.pm
 

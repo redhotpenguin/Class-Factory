@@ -1,5 +1,14 @@
 Revision history for Perl extension Class::Factory.
 
+0.04
+
+     - Add overridable logging/errors (Thanks to Eric Andreychek
+     <eric@openthought.net>)
+
+     - Subclasses do not need to implement any methods any longer --
+     using the module is a simple 'use base qw( Class::Factory )'
+     away. (Thanks to Eric for the suggestion.)
+
 0.03  Sun Feb 10 13:00:20 EST 2002
 
       Added the ability to register a type/class without having
