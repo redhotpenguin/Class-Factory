@@ -1,16 +1,47 @@
-Class/Factory version 0.01
+Class::Factory - Base class for dynamic factory classes.
 ==========================
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+  package My::Factory;
 
-A README file is required for CPAN modules since CPAN extracts the
-README file from a module distribution so that people browsing the
-archive can use it get an idea of the modules uses. It is usually a
-good idea to provide version information here so that people can
-decide whether fixes for the module are worth downloading.
+  use base qw( Class::Factory );
+
+  my %TYPES = ();
+
+  sub new {
+      my ( $class, $type, $params ) = @_;
+      my $factory_class = $class->get_factory_class( $type );
+      return bless( $params, $factory_class );
+  }
+
+  # SIMPLE: Let the parent know about our types
+
+  sub get_factory_map { return \%TYPES }
+
+  # FLEXIBLE: Let the parent know about our types
+
+  sub get_factory_type {
+      my ( $class, $type ) = @_;
+      return $TYPES{ $type };
+  }
+
+  sub set_factory_type {
+      my ( $class, $type, $factory_class ) = @_;
+      $TYPES{ $type } = $factory_class;
+  }
+
+  # Add our default types
+
+  My::Factory->add_factory_type( perl  => 'My::Factory::Perl' );
+  My::Factory->add_factory_type( blech => 'My::Factory::Blech' );
+
+  1;
+
+  # Adding a new factory type in code
+
+  My::Factory->add_factory_type( custom => 'Other::Custom::Class' );
+  my $custom_object = My::Factory->new( 'custom', { this => 'that' } );
+
+See POD for details
 
 INSTALLATION
 
@@ -23,13 +54,15 @@ To install this module type the following:
 
 DEPENDENCIES
 
-This module requires these other modules and libraries:
-
-  blah blah blah
+None
 
 COPYRIGHT AND LICENCE
 
-Put the correct copyright and licence information here.
+Copyright (c) 2002 Chris Winters. All rights reserved.
 
-Copyright (C) 2002 A. U. Thor blah blah blah
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
 
+AUTHOR
+
+Chris Winters <chris@cwinters.com>
