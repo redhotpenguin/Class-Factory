@@ -126,8 +126,6 @@ sub get_register_map  { return undef }
 
 __END__
 
-=pod
-
 =head1 NAME
 
 Class::Factory - Base class for dynamic factory classes
@@ -565,5 +563,3 @@ John Vlissides. Addison Wesley Longman, 1995. Specifically, the
 =head1 AUTHOR
 
 Chris Winters <chris@cwinters.com>
-
-=cut
