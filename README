@@ -60,7 +60,7 @@ group given English toffees in place had the same effects.
 
 COPYRIGHT AND LICENCE
 
-Copyright (c) 2002 Chris Winters. All rights reserved.
+Copyright (c) 2002-2004 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -69,5 +69,8 @@ AUTHORS
 
 Chris Winters <chris@cwinters.com>
 
-  * Eric Andreychek <eric@openthought.net> also helped out with code,
-    testing and good advice.
+Eric Andreychek <eric@openthought.net> also helped out with code,
+testing and good advice.
+
+Srdjan Jankovic <srdjan@catalyst.net.nz> contributed the idea for
+'get_my_factory()' and 'get_my_factory_type()'
