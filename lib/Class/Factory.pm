@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '0.02';
+$Class::Factory::VERSION = '0.03';
 
 # Simple constructor -- override as needed
 
@@ -30,10 +30,17 @@ sub get_factory_class {
     my $factory_class = ( ref $map eq 'HASH' )
                           ? $map->{ $object_type }
                           : $item->get_factory_type( $object_type );
-    unless ( $factory_class ) {
-        die "Factory type [$object_type] is not defined in [$class]\n";
+    return $factory_class if ( $factory_class );
+
+    my $register_map = $item->get_register_map;
+    $factory_class   = ( ref $register_map eq 'HASH' )
+                         ? $register_map->{ $object_type }
+                         : $item->get_register_type( $object_type );
+    if ( $factory_class ) {
+        $item->add_factory_type( $object_type, $factory_class );
+        return $factory_class;
     }
-    return $factory_class;
+    die "Factory type [$object_type] is not defined in [$class]\n";
 }
 
 
@@ -74,6 +81,33 @@ sub add_factory_type {
     return $object_class;
 }
 
+sub register_factory_type {
+    my ( $item, $object_type, $object_class ) = @_;
+    my $class = ref $item || $item;
+    unless ( $object_type )  {
+        die "Cannot add factory type to [$class]: no type defined\n";
+    }
+    unless ( $object_class ) {
+        die "Cannot add factory type [$object_type] to [$class]: no class defined\n";
+    }
+
+    my $map = $item->get_register_map;
+    my $set_object_class = ( ref $map eq 'HASH' )
+                              ? $map->{ $object_type }
+                              : $item->get_register_type( $object_type );
+    if ( $set_object_class ) {
+        warn "Attempt to register type [$object_type] with [$class] is",
+             "redundant; type registered with class [$set_object_class]\n";
+        return;
+    }
+    if ( ref $map eq 'HASH' ) {
+        $map->{ $object_type } = $object_class;
+    }
+    else {
+        $item->set_register_type( $object_type, $object_class );
+    }
+}
+
 
 ########################################
 # INTERFACE
@@ -81,9 +115,12 @@ sub add_factory_type {
 # We don't die when these are called because the subclass can define
 # either A + B or C
 
-sub get_factory_type { return undef }
-sub set_factory_type { return undef }
-sub get_factory_map  { return undef }
+sub get_factory_type  { return undef }
+sub set_factory_type  { return undef }
+sub get_factory_map   { return undef }
+sub get_register_type { return undef }
+sub set_register_type { return undef }
+sub get_register_map  { return undef }
 
 1;
 
@@ -119,17 +156,53 @@ Class::Factory - Base class for dynamic factory classes
       $TYPES{ $type } = $factory_class;
   }
 
+  # LAZY LOADING: Allow subclasses to register a type without loading
+  # its class
+
+  my %REGISTERED = ();
+
+  # SIMPLE LAZY LOAD: Let the parent know about registered types
+
+  sub get_register_map { return \%REGISTERED }
+
+  # FLEXIBLE LAZY LOAD: Let the parent know about registered types
+
+  sub get_register_type {
+      my ( $class, $type ) = @_;
+      return $REGISTERED{ $type };
+  }
+
+  sub set_register_type {
+      my ( $class, $type, $factory_class ) = @_;
+      $REGISTERED{ $type } = $factory_class;
+  }
+
+
   # Add our default types
 
+  # This type is loaded when the statement is run
+
   My::Factory->add_factory_type( perl  => 'My::Factory::Perl' );
-  My::Factory->add_factory_type( blech => 'My::Factory::Blech' );
+
+  # This type is loaded on the first request for type 'blech'
+
+  My::Factory->register_factory_type( blech => 'My::Factory::Blech' );
 
   1;
 
-  # Adding a new factory type in code
+  # Adding a new factory type in code -- 'Other::Custom::Class' is
+  # brought in when 'add_factory_type()' is called
 
   My::Factory->add_factory_type( custom => 'Other::Custom::Class' );
   my $custom_object = My::Factory->new( 'custom', { this => 'that' } );
+
+  # Registering a new factory type in code --
+  # 'Other::Custom::ClassTwo' in brought in when 'new()' is called
+  # with type 'custom_two'
+
+  My::Factory->register_factory_type( custom_two => 'Other::Custom::ClassTwo' );
+  my $custom_object = My::Factory->new( 'custom_two', { this => 'that' } );
+
 
 =head1 DESCRIPTION
 
@@ -220,6 +293,53 @@ C<get_factory_class()> and C<add_factory_type()>. Subclasses must
 define either C<get_factory_map()> or both C<get_factory_type()> and
 C<set_factory_type()>.
 
+=head2 Registering Factory Types
+
+As an additional feature, you can have your class accept registered
+types that get brought in only when requested. This lazy loading
+feature can be very useful when your factory offers many choices and
+users will only need one or two of them at a time, or when some
+classes the factory generates use libraries that some users may not
+have installed.
+
+For example, say I have a factory that generates an object which
+parses GET/POST parameters. One type is straightforward L<CGI|CGI>,
+one is L<Apache::Request|Apache::Request>. Many systems do not have
+L<Apache::Request|Apache::Request> installed so we do not want to
+'use' the module whenever we create the factory.
+
+Instead, we will register these types with the factory and only when
+that type is requested will be bring that implementation in. To extend
+our example above, we will use the configuration factory:
+
+ package My::ConfigFactory;
+
+ use strict;
+ use base qw( Class::Factory );
+
+ my %TYPES      = ();
+ sub get_factory_map  { return \%TYPES }
+ my %REGISTERED = ();
+ sub get_register_map { return \%REGISTERED }
+
+ sub read  { die "Define read() in implementation" }
+ sub write { die "Define write() in implementation" }
+ sub get   { die "Define get() in implementation" }
+ sub set   { die "Define set() in implementation" }
+
+ 1;
+
+We only added two lines. But now we can register configuration types
+for modules that the user might not have:
+
+ My::ConfigFactory->register_factory_type( SOAP => 'My::Config::SOAP' );
+
+So the C<My::Config::SOAP> class will only get included at the first
+request for a configuration object of that type:
+
+ my $config = My::ConfigFactory->new( 'SOAP', 'http://myco.com/',
+                                              { port => 8080, ... } );
+
 =head1 METHODS
 
 B<new( $type, @params )>
@@ -255,7 +375,18 @@ type C<$object_type>.
 
 Returns: name of class added if successful. If the proper parameters
 are not given or if we cannot find C<$object_class> in @INC, then a
-C<die()> is thrown.
+C<die()> is thrown. A C<warn>ing is issued if the type has already
+been added.
+
+B<register_factory_type( $object_type, $object_class )>
+
+Tells the factory to register a new factory type. This type will be
+dynamically included (using C<add_factory_type()> at the first request
+for an instance of that type.
+
+Returns: name of class registered if successful. If the proper
+parameters are not given then a C<die()> is thrown. A C<warn>ing is
+issued if the type has already been registered.
 
 =head1 SUBCLASSING
 
@@ -268,6 +399,18 @@ cases, the simple way will suffice:
 
  my %TYPES = ();
  sub get_factory_map { return \%TYPES }
+
+If you want to also add the ability to register classes:
+
+ package My::Factory;
+
+ use base qw( Class::Factory );
+
+ my %TYPES      = ();
+ sub get_factory_map  { return \%TYPES }
+ my %REGISTERED = ();
+ sub get_register_map { return \%REGISTERED }
+
 
 If you elect to use the flexible way, you need to implement two
 methods:
@@ -287,6 +430,35 @@ methods:
      return $TYPES{ $type } = $object_class;
  }
 
+And if you want to use the flexible way along with registering types:
+
+ package My::Factory;
+
+ use base qw( Class::Factory );
+
+ my %TYPES = ();
+ sub get_factory_class {
+     my ( $class, $type ) = @_;
+     return $TYPES{ $type };
+ }
+
+ sub set_factory_class {
+     my ( $class, $type, $object_class ) = @_;
+     return $TYPES{ $type } = $object_class;
+ }
+
+ my %REGISTERED = ();
+ sub get_register_class {
+     my ( $class, $type ) = @_;
+     return $REGISTERED{ $type };
+ }
+
+ sub set_register_class {
+     my ( $class, $type, $object_class ) = @_;
+     return $REGISTERED{ $type } = $object_class;
+ }
+
+
 How these methods work is entirely up to you -- maybe
 C<get_factory_class()> does a lookup in some external resource before
 returning the class. Whatever floats your boat.
@@ -305,6 +477,8 @@ method that gets called when the object is created:
 
  my %TYPES = ();
  sub get_factory_map { return \%TYPES }
+ my %REGISTERED = ();
+ sub get_register_map { return \%REGISTERED }
 
  1;
 
@@ -342,6 +516,38 @@ have specified a single hashref parameter.
 
 These sorts of specifications are informal and not enforced by this
 C<Class::Factory>.
+
+=head2 Registering Types
+
+Many times you will want the parent class to automatically register
+the types it knows about:
+
+ package My::Factory;
+
+ use strict;
+ use base qw( Class::Factory );
+
+ my %TYPES = ();
+ sub get_factory_map { return \%TYPES }
+ my %REGISTERED = ();
+ sub get_register_map { return \%REGISTERED }
+
+ My::Factory->register_factory_type( type1 => 'My::Impl::Type1' );
+ My::Factory->register_factory_type( type2 => 'My::Impl::Type1' );
+
+ 1;
+
+This allows the default types to be registered when the factory is
+initialized. So you can use the default implementations without any
+more registering/adding:
+
+ #!/usr/bin/perl
+
+ use strict;
+ use My::Factory;
+
+ my $impl1 = My::Factory->new( 'type1' );
+ my $impl2 = My::Factory->new( 'type2' );
 
 =head1 COPYRIGHT
 
