@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.00';
+$Class::Factory::VERSION = '1.01';
 
 my %INCLUDE  = ();
 my %REGISTER = ();
@@ -37,8 +37,8 @@ sub get_factory_class {
         $class->add_factory_type( $object_type, $factory_class );
         return $factory_class;
     }
-    $item->factory_error( "Factory type [$object_type] is not defined ",
-                          "in [$class]" );
+    $item->factory_error( "Factory type '$object_type' is not defined ",
+                          "in '$class'" );
 }
 
 
@@ -48,19 +48,19 @@ sub add_factory_type {
     my ( $item, $object_type, $object_class ) = @_;
     my $class = ref $item || $item;
     unless ( $object_type )  {
-        $item->factory_error( "Cannot add factory type to [$class]: no ",
+        $item->factory_error( "Cannot add factory type to '$class': no ",
                               "type defined");
     }
     unless ( $object_class ) {
-        $item->factory_error( "Cannot add factory type [$object_type] to ",
-                              "[$class]: no class defined" );
+        $item->factory_error( "Cannot add factory type '$object_type' to ",
+                              "'$class': no class defined" );
     }
 
     my $set_object_class = $INCLUDE{ $class }->{ $object_type };
     if ( $set_object_class ) {
-        $item->factory_log( "Attempt to add type [$object_type] to [$class] ",
+        $item->factory_log( "Attempt to add type '$object_type' to '$class' ",
                             "redundant; type already exists with class ",
-                            "[$set_object_class]" );
+                            "'$set_object_class'" );
         return;
     }
 
@@ -70,11 +70,17 @@ sub add_factory_type {
     $object_class =~ m/^([\w:-]+(?:\.(?:pm|ph|pl))?)$/;
     $object_class = $1;
 
-    eval "require $object_class";
-    if ( $@ ) {
-        $item->factory_error( "Cannot add factory type [$object_type] to ",
-                              "class [$class]: factory class [$object_class] ",
-                              "cannot be required [$@]" );
+    if ( $INC{ $object_class } ) {
+        $item->factory_log( "Looks like class '$object_class' was already ",
+                            "included; no further work necessary" );
+    }
+    else {
+        eval "require $object_class";
+        if ( $@ ) {
+            $item->factory_error( "Cannot add factory type '$object_type' to ",
+                                  "class '$class': factory class '$object_class' ",
+                                  "cannot be required: $@" );
+        }
     }
     return $INCLUDE{ $class }->{ $object_type } = $object_class;
 }
@@ -83,19 +89,19 @@ sub register_factory_type {
     my ( $item, $object_type, $object_class ) = @_;
     my $class = ref $item || $item;
     unless ( $object_type )  {
-        $item->factory_error( "Cannot add factory type to [$class]: no type ",
+        $item->factory_error( "Cannot add factory type to '$class': no type ",
                               "defined" );
     }
     unless ( $object_class ) {
-        $item->factory_error( "Cannot add factory type [$object_type] to ",
-                              "[$class]: no class defined" );
+        $item->factory_error( "Cannot add factory type '$object_type' to ",
+                              "'$class': no class defined" );
     }
 
     my $set_object_class = $REGISTER{ $class }->{ $object_type };
     if ( $set_object_class ) {
-        $item->factory_log( "Attempt to register type [$object_type] with ",
-                            "[$class] is redundant; type registered with ",
-                            "class [$set_object_class]" );
+        $item->factory_log( "Attempt to register type '$object_type' with ",
+                            "'$class' is redundant; type registered with ",
+                            "class '$set_object_class'" );
         return;
     }
     return $REGISTER{ $class }->{ $object_type } = $object_class;

@@ -3,45 +3,39 @@ Class::Factory - Base class for dynamic factory classes
 
   package My::Factory;
 
+  use strict;
   use base qw( Class::Factory );
-
-  my %TYPES = ();
-
-  # SIMPLE: Let the parent know about our types
-
-  sub get_factory_map { return \%TYPES }
-
-  # FLEXIBLE: Let the parent know about our types
-
-  sub get_factory_type {
-      my ( $class, $type ) = @_;
-      return $TYPES{ $type };
-  }
-
-  sub set_factory_type {
-      my ( $class, $type, $factory_class ) = @_;
-      $TYPES{ $type } = $factory_class;
-  }
-
-  # Simple factory contructor
-
-  sub new {
-      my ( $class, $type, $params ) = @_;
-      my $factory_class = $class->get_factory_class( $type );
-      return bless( $params, $factory_class );
-  }
 
   # Add our default types
 
   My::Factory->add_factory_type( perl  => 'My::Factory::Perl' );
   My::Factory->add_factory_type( blech => 'My::Factory::Blech' );
 
+  # Register optional types
+
+  My::Factory->register_factory_type( java => 'My::Factory::Java' );
+
   1;
+
+  # Create new objects using the default types
+
+  my $perl_item = My::Factory->new( 'perl', foo => 'bar' );  
+  my $blech_item = My::Factory->new( 'blech', foo => 'baz' );  
+
+  # Create new object using the optional type; this library is loaded
+  # on the first use
+
+  my $java_item = My::Factory->new( 'java', foo => 'quux' );
 
   # Adding a new factory type in code
 
   My::Factory->add_factory_type( custom => 'Other::Custom::Class' );
-  my $custom_object = My::Factory->new( 'custom', { this => 'that' } );
+  my $custom_object = My::Factory->new( 'custom', this => 'that' );
+
+  # Register a new factory type in code
+
+  My::Factory->register_factory_type( bleededge => 'Other::Customized::Class' );
+  my $edgy_object = My::Factory->new( 'bleededge', this => 'that' );
 
 See POD for details
 
@@ -71,6 +65,9 @@ Copyright (c) 2002 Chris Winters. All rights reserved.
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
-AUTHOR
+AUTHORS
 
 Chris Winters <chris@cwinters.com>
+
+  * Eric Andreychek <eric@openthought.net> also helped out with code,
+    testing and good advice.

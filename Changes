@@ -1,13 +1,34 @@
 Revision history for Perl extension Class::Factory.
 
-0.04
+1.01  Thu Aug 21 22:08:29 EDT 2003
 
-     - Add overridable logging/errors (Thanks to Eric Andreychek
-     <eric@openthought.net>)
+      - add_factory_type() checks %INC to see if a class is already
+      loaded. This gets rid of any 'Subroutine foo redefined' messages
+      you might see if warnings are turned on.
 
-     - Subclasses do not need to implement any methods any longer --
-     using the module is a simple 'use base qw( Class::Factory )'
-     away. (Thanks to Eric for the suggestion.)
+      - All log/error messages now have variables in apostrophes
+      rather than brackes. So:
+
+        "Class [$class] not found"
+
+      becomes:
+
+        "Class '$class' not found"
+
+      It's just cleaner that way.
+
+1.00  Mon Oct  7 11:15:50 EDT 2002
+
+      - Add overridable logging/errors (Thanks to Eric Andreychek
+      <eric@openthought.net>)
+
+      - Subclasses do not need to implement any methods any longer --
+      using the module is a simple 'use base qw( Class::Factory )'
+      away. (Thanks to Eric for the suggestion.)
+
+      - Add get_loaded_types(), get_loaded_classes(),
+      get_registered_types() and get_registered_classes() so you can
+      keep track of the factory state.
 
 0.03  Sun Feb 10 13:00:20 EST 2002
 
