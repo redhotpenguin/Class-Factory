@@ -9,6 +9,10 @@ my %TYPES = ();
 sub get_factory_type { return $TYPES{ $_[1] } }
 sub set_factory_type { return $TYPES{ $_[1] } = $_[2] }
 
+my %REGISTER = ();
+sub get_register_type { return $REGISTER{ $_[1] } }
+sub set_register_type { return $REGISTER{ $_[1] } = $_[2] }
+
 sub init {
     my ( $self, $params ) = @_;
     $self->band_name( $params->{band_name} );
@@ -29,7 +33,7 @@ sub genre {
 }
 
 MyFlexibleBand->add_factory_type( rock    => 'MyRockBand' );
-MyFlexibleBand->add_factory_type( country => 'MyCountryBand' );
+MyFlexibleBand->register_factory_type( country => 'MyCountryBand' );
 
 1;
 
