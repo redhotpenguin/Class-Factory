@@ -4,9 +4,9 @@ use strict;
 
 # Note: @ISA is modified during the test
 
-sub initialize {
+sub init {
     my ( $self, $params ) = @_;
-    $self->SUPER::initialize( $params );
+    $self->SUPER::init( $params );
     $self->genre( 'ROCK' );
     return $self;
 }
