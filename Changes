@@ -1,6 +1,12 @@
 Revision history for Perl extension Class::Factory.
 
-0.01  Mon Jan 28 08:35:09 2002
+0.02  Wed Jan 30 00:22:58 EST 2002
+
+      Added simple constructor to be inherited as needed. This
+      constructor automatically calls 'init()', not coincidentally the
+      name that Class::Base uses. Small variable name changes.
+
+0.01  Mon Jan 28 08:35:09 EST 2002
 	
       Original version with tests, documentation and everything,
       written after the third or fourth time I cut-and-pasted a
