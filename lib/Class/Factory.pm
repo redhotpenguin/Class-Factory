@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '0.04';
+$Class::Factory::VERSION = '1.00';
 
 my %INCLUDE  = ();
 my %REGISTER = ();
@@ -109,11 +109,25 @@ sub get_loaded_classes {
     return sort values %{ $INCLUDE{ $class } };
 }
 
+sub get_loaded_types {
+    my ( $item ) = @_;
+    my $class = ref $item || $item;
+    return () unless ( ref $INCLUDE{ $class } eq 'HASH' );
+    return sort keys %{ $INCLUDE{ $class } };
+}
+
 sub get_registered_classes {
     my ( $item ) = @_;
     my $class = ref $item || $item;
     return () unless ( ref $REGISTER{ $class } eq 'HASH' );
     return sort values %{ $REGISTER{ $class } };
+}
+
+sub get_registered_types {
+    my ( $item ) = @_;
+    my $class = ref $item || $item;
+    return () unless ( ref $REGISTER{ $class } eq 'HASH' );
+    return sort keys %{ $REGISTER{ $class } };
 }
 
 ########################################
@@ -485,13 +499,27 @@ B<get_loaded_classes()>
 Returns a sorted list of the currently loaded classes. If no classes
 have been loaded yet, returns an empty list.
 
+B<get_loaded_types()>
+
+Returns a sorted list of the currently loaded types. If no classes
+have been loaded yet, returns an empty list.
+
 B<get_registered_classes()>
 
 Returns a sorted list of the classes that were ever registered. If no
-classes have been loaded yet, returns an empty list.
+classes have been registered yet, returns an empty list.
 
 Note that a class can be both registered and loaded since we do not
 clear out the registration once a registered class has been loaded on
+demand.
+
+B<get_registered_types()>
+
+Returns a sorted list of the types that were ever registered. If no
+types have been registered yet, returns an empty list.
+
+Note that a type can be both registered and loaded since we do not
+clear out the registration once a registered type has been loaded on
 demand.
 
 =head1 COPYRIGHT
