@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 21;
+use Test::More  tests => 23;
 
 use lib qw( ./t ./lib );
 
@@ -22,21 +22,25 @@ my $country_genre = 'COUNTRY';
     @MyRockBand::ISA = qw( MySimpleBand );
     @MyCountryBand::ISA = qw( MySimpleBand );
 
-    my $map = MySimpleBand->get_factory_map;
-    is( ref( $map ), 'HASH', 'Return of get_factory_map()' );
-    is( scalar keys %{ $map }, 2, 'Keys in map' );
-    is( $map->{rock},    'MyRockBand',    'Simple type added 1' );
-    is( $map->{country}, 'MyCountryBand', 'Simple type added 2' );
+    my $factory_map = MySimpleBand->get_factory_map;
+    is( ref( $factory_map ), 'HASH', 'Return of get_factory_map()' );
+    is( scalar keys %{ $factory_map }, 1, 'Keys in factory map' );
+    is( $factory_map->{rock},    'MyRockBand',    'Simple type added' );
+
+    my $register_map = MySimpleBand->get_register_map;
+    is( ref( $register_map ), 'HASH', 'Return of get_register_map()' );
+    is( scalar keys %{ $register_map }, 1, 'Keys in register map' );
+    is( $register_map->{country}, 'MyCountryBand', 'Simple type registered' );
 
     my $rock = MySimpleBand->new( 'rock', { band_name => $rock_band } );
-    is( ref( $rock ), 'MyRockBand', 'Simple object returned 1' );
-    is( $rock->band_name(), $rock_band, 'Simple object super init parameter set 1' );
-    is( $rock->genre(), $rock_genre, 'Simple object self init parameter set 1' );
+    is( ref( $rock ), 'MyRockBand', 'Simple added object returned' );
+    is( $rock->band_name(), $rock_band, 'Simple added super init parameter set' );
+    is( $rock->genre(), $rock_genre, 'Simple added self init parameter set' );
 
     my $country = MySimpleBand->new( 'country', { band_name => $country_band } );
-    is( ref( $country ), 'MyCountryBand', 'Simple object returned 2' );
-    is( $country->band_name(), $country_band, 'Simple object super init parameter set 2' );
-    is( $country->genre(), $country_genre, 'Simple object self init parameter set 2' );
+    is( ref( $country ), 'MyCountryBand', 'Simple registered object returned' );
+    is( $country->band_name(), $country_band, 'Simple registered object super init parameter set' );
+    is( $country->genre(), $country_genre, 'Simple registered object self init parameter set' );
 }
 
 # Next the flexible settting
@@ -49,16 +53,16 @@ my $country_genre = 'COUNTRY';
     @MyRockBand::ISA = qw( MyFlexibleBand );
     @MyCountryBand::ISA = qw( MyFlexibleBand );
 
-    is( MyFlexibleBand->get_factory_type( 'rock' ),    'MyRockBand',    'Flexible type added 1' );
-    is( MyFlexibleBand->get_factory_type( 'country' ), 'MyCountryBand', 'Flexible type added 2' );
+    is( MyFlexibleBand->get_factory_type( 'rock' ),    'MyRockBand',    'Flexible type added' );
+    is( MyFlexibleBand->get_register_type( 'country' ), 'MyCountryBand', 'Flexible type registered' );
 
     my $rock = MyFlexibleBand->new( 'rock', { band_name => $rock_band } );
-    is( ref( $rock ), 'MyRockBand', 'Flexible object returned 1' );
-    is( $rock->band_name(), $rock_band, 'Flexible object super init parameter set 1' );
-    is( $rock->genre(), $rock_genre, 'Flexible object self init parameter set 1' );
+    is( ref( $rock ), 'MyRockBand', 'Flexible added object returned' );
+    is( $rock->band_name(), $rock_band, 'Flexible added object super init parameter set' );
+    is( $rock->genre(), $rock_genre, 'Flexible added object self init parameter set' );
 
     my $country = MyFlexibleBand->new( 'country', { band_name => $country_band } );
-    is( ref( $country ), 'MyCountryBand', 'Flexible object returned 2' );
-    is( $country->band_name(), $country_band, 'Flexible object super init parameter set 2' );
-    is( $country->genre(), $country_genre, 'Flexible object self init parameter set 2' );
+    is( ref( $country ), 'MyCountryBand', 'Flexible registered object returned' );
+    is( $country->band_name(), $country_band, 'Flexible registered object super init parameter set' );
+    is( $country->genre(), $country_genre, 'Flexible registered object self init parameter set' );
 }
