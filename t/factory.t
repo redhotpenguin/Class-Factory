@@ -3,7 +3,7 @@
 use strict;
 use Test::More  tests => 21;
 
-use lib qw( t );
+use lib qw( ./t ./lib );
 
 require_ok( 'Class::Factory' );
 
