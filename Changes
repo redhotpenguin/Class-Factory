@@ -1,0 +1,6 @@
+Revision history for Perl extension Class::Factory.
+
+0.01  Mon Jan 28 08:35:09 2002
+	- original version; created by h2xs 1.21 with options
+		-A -X -n Class::Factory
+
