@@ -3,6 +3,8 @@
 use strict;
 use Test::More  tests => 21;
 
+use lib qw( t );
+
 require_ok( 'Class::Factory' );
 
 my $rock_band     = 'Slayer';
