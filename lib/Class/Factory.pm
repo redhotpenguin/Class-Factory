@@ -6,6 +6,7 @@ use strict;
 
 $Class::Factory::VERSION = '0.01';
 
+
 sub get_factory_class {
     my ( $item, $factory_type ) = @_;
     my $class = ref $item || $item;
@@ -84,12 +85,6 @@ Class::Factory - Base class for dynamic factory classes
 
   my %TYPES = ();
 
-  sub new {
-      my ( $class, $type, $params ) = @_;
-      my $factory_class = $class->get_factory_class( $type );
-      return bless( $params, $factory_class );
-  }
-
   # SIMPLE: Let the parent know about our types
 
   sub get_factory_map { return \%TYPES }
@@ -104,6 +99,14 @@ Class::Factory - Base class for dynamic factory classes
   sub set_factory_type {
       my ( $class, $type, $factory_class ) = @_;
       $TYPES{ $type } = $factory_class;
+  }
+
+  # Simple factory constructor
+
+  sub new {
+      my ( $class, $type, $params ) = @_;
+      my $factory_class = $class->get_factory_class( $type );
+      return bless( $params, $factory_class );
   }
 
   # Add our default types
@@ -328,7 +331,7 @@ it under the same terms as Perl itself.
 
 "Design Patterns", by Erich Gamma, Richard Helm, Ralph Johnson and
 John Vlissides. Addison Wesley Longman, 1995. Specifically, the
-'Factory Method' pattern at pp. 107-116.
+'Factory Method' pattern, pp. 107-116.
 
 =head1 AUTHOR
 
