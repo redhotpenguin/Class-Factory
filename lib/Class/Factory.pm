@@ -201,10 +201,9 @@ So now users can use the custom configuration with something like:
 This might not seem like a very big win, and for small standalone
 applications it is not. But when you develop large applications the
 C<add_factory_type()> step will almost certainly be done at
-application initialization time as a result of processing metadata
-about the instantiation of the application. And then users of the
-application can access the different types as if they are part of the
-system.
+application initialization time, hidden away from the eyes of the
+application developer. That developer will only know that she can
+access the different object types as if they are part of the system.
 
 As you see in the example above, implementation for subclasses is very
 simple. The base class defines two methods for subclasses to use:
