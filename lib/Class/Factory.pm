@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.01';
+$Class::Factory::VERSION = '1.02';
 
 my %INCLUDE  = ();
 my %REGISTER = ();
@@ -14,6 +14,7 @@ my %REGISTER = ();
 sub new {
     my ( $pkg, $type, @params ) = @_;
     my $class = $pkg->get_factory_class( $type );
+    return undef unless ( $class );
     my $self = bless( {}, $class );
     return $self->init( @params );
 }
@@ -34,11 +35,13 @@ sub get_factory_class {
 
     $factory_class = $REGISTER{ $class }->{ $object_type };
     if ( $factory_class ) {
-        $class->add_factory_type( $object_type, $factory_class );
-        return $factory_class;
+        my $added_class =
+            $class->add_factory_type( $object_type, $factory_class );
+        return $added_class;
     }
     $item->factory_error( "Factory type '$object_type' is not defined ",
                           "in '$class'" );
+    return undef;
 }
 
 
@@ -80,6 +83,7 @@ sub add_factory_type {
             $item->factory_error( "Cannot add factory type '$object_type' to ",
                                   "class '$class': factory class '$object_class' ",
                                   "cannot be required: $@" );
+            return undef;
         }
     }
     return $INCLUDE{ $class }->{ $object_type } = $object_class;
@@ -154,35 +158,41 @@ Class::Factory - Base class for dynamic factory classes
 
   package My::Factory;
   use base qw( Class::Factory );
-
+ 
   # Add our default types
-
+ 
   # This type is loaded when the statement is run
-
+ 
   __PACKAGE__->add_factory_type( perl => 'My::Factory::Perl' );
 
   # This type is loaded on the first request for type 'blech'
-
+ 
   __PACKAGE__->register_factory_type( blech => 'My::Factory::Blech' );
-
+ 
   1;
 
   # Adding a new factory type in code -- 'Other::Custom::Class' is
-  # brought in when 'add_factory_type()' is called
-
+  # brought in via 'require' immediately
+ 
   My::Factory->add_factory_type( custom => 'Other::Custom::Class' );
   my $custom_object = My::Factory->new( 'custom', { this => 'that' } );
-
-  # Registering a new factory type in code --
-  # 'Other::Custom::ClassTwo' in brought in when 'new()' is called
-  # with type 'custom_two'
-
+ 
+  # Registering a new factory type in code; 'Other::Custom::ClassTwo'
+  # isn't brought in yet...
+ 
   My::Factory->register_factory_type( custom_two => 'Other::Custom::ClassTwo' );
+ 
+  # ...it's only 'require'd when the first instance of the type is
+  # created
+ 
   my $custom_object = My::Factory->new( 'custom_two', { this => 'that' } );
 
-  # Get all the loaded and registered classes
-  my @loaded = My::Factory->get_loaded_classes;
-  my @registered = My::Factory->get_registered_classes;
+  # Get all the loaded and registered classes and types
+ 
+  my @loaded_classes     = My::Factory->get_loaded_classes;
+  my @loaded_types       = My::Factory->get_loaded_types;
+  my @registered_classes = My::Factory->get_registered_classes;
+  my @registered_types   = My::Factory->get_registered_types;
 
 =head1 DESCRIPTION
 
@@ -192,40 +202,41 @@ common groups of objects.
 
 Factory classes are used when you have different implementations for
 the same set of tasks but may not know in advance what implementations
-you will be using. For instance, take configuration files. There are
-four basic operations you would want to do with any configuration:
-read the file in, lookup a value, set a value, write the file
-out. There are also many different types of configuration files, and
-you may want users to be able to provide an implementation for their
-own home-grown configuration format.
+you will be using. Configuration files are a good example of
+this. There are four basic operations you would want to do with any
+configuration: read the file in, lookup a value, set a value, write
+the file out. There are also many different types of configuration
+files, and you may want users to be able to provide an implementation
+for their own home-grown configuration format.
 
 With a factory class this is easy. To create the factory class, just
 subclass C<Class::Factory> and create an interface for your
 configuration serializer. C<Class::Factory> even provides a simple
-constructor for you:
+constructor for you. Here's a sample interface and our two built-in
+configuration types:
 
  package My::ConfigFactory;
-
+ 
  use strict;
  use base qw( Class::Factory );
-
+ 
  sub read  { die "Define read() in implementation" }
  sub write { die "Define write() in implementation" }
  sub get   { die "Define get() in implementation" }
  sub set   { die "Define set() in implementation" }
-
+ 
  __PACKAGE__->add_factory_type( ini  => 'My::IniReader' );
  __PACKAGE__->add_factory_type( perl => 'My::PerlReader' );
-
+ 
  1;
 
 And then users can add their own subclasses:
 
  package My::CustomConfig;
-
+ 
  use strict;
  use base qw( My::ConfigFactory );
-
+ 
  sub init {
      my ( $self, $filename, $params ) = @_;
      if ( $params->{base_url} ) {
@@ -236,63 +247,72 @@ And then users can add their own subclasses:
      }
      return $self;
  }
-
+ 
  sub read  { ... implementation to read a file ... }
  sub write { ... implementation to write a file ...  }
  sub get   { ... implementation to get a value ... }
  sub set   { ... implementation to set a value ... }
-
+ 
  sub read_from_web { ... implementation to read via http ... }
-
+ 
  # Now register my type with the factory
-
+ 
  My::ConfigFactory->add_factory_type( 'mytype' => __PACKAGE__ );
-
+ 
  1;
 
-(You may not with to make your factory the same as your interface, but
+(You may not wish to make your factory the same as your interface, but
 this is an abbreviated example.)
 
 So now users can use the custom configuration with something like:
 
  #!/usr/bin/perl
-
+ 
  use strict;
  use My::ConfigFactory;
-
+ use My::CustomConfig;   # this adds the factory type 'custom'...
+ 
  my $config = My::ConfigFactory->new( 'custom', 'myconf.dat' );
+ print "Configuration is a: ", ref( $config ), "\n";
+
+Which prints:
+
+ Configuration is a My::CustomConfig
 
 And they can even add their own:
 
  My::ConfigFactory->register_factory_type( 'newtype' => 'My::New::ConfigReader' );
 
 This might not seem like a very big win, and for small standalone
-applications it is not. But when you develop large applications the
-C<(add|register)_factory_type()> step will almost certainly be done at
-application initialization time, hidden away from the eyes of the
-application developer. That developer will only know that she can
+applications probably isn't. But when you develop large applications
+the C<(add|register)_factory_type()> step will almost certainly be
+done at application initialization time, hidden away from the eyes of
+the application developer. That developer will only know that she can
 access the different object types as if they are part of the system.
 
-As you see in the example above, implementation for subclasses is very
+As you see in the example above implementation for subclasses is very
 simple -- just add C<Class::Factory> to your inheritance tree and you
 are done.
 
 =head2 Gotchas
 
-All information is stored under the original subclass name. For
-instance, the following will not do what you expect:
+All type-to-class mapping information is stored under the original
+subclass name. So the following will not do what you expect:
 
  package My::Factory;
  use base qw( Class::Factory );
+ ...
 
  package My::Implementation;
  use base qw( My::Factory );
-
+ ...
  My::Implementation->register_factory_type( impl => 'My::Implementation' );
 
 This does not register 'My::Implementation' under 'My::Factory' as you
-would like, it registers the type under 'My::Implementation'. Keep
-everything in the original factory class name and you will be ok.
+would like, it registers the type under 'My::Implementation' because
+that's the class we used to invoke the 'register_factory_type'
+method. Make all C<add_factory_type()> and C<register_factory_type()>
+invocations with the original factory class name and you'll be golden.
 
 =head2 Registering Factory Types
 
@@ -304,34 +324,35 @@ classes the factory generates use libraries that some users may not
 have installed.
 
 For example, say I have a factory that generates an object which
-parses GET/POST parameters. One type is straightforward L<CGI|CGI>,
-one is L<Apache::Request|Apache::Request>. Many systems do not have
+parses GET/POST parameters. One type uses the ubiquitous L<CGI|CGI>
+module, the other uses the faster but rarer
+L<Apache::Request|Apache::Request>. Many systems do not have
 L<Apache::Request|Apache::Request> installed so we do not want to
 'use' the module whenever we create the factory.
 
 Instead, we will register these types with the factory and only when
-that type is requested will be bring that implementation in. To extend
-our example above, we will use the configuration factory:
+that type is requested will we bring that implementation in. To extend
+our configuration example above we'll change the configuration factory
+to use C<register_factory_type()> instead of C<add_factory_type()>:
 
  package My::ConfigFactory;
-
+ 
  use strict;
  use base qw( Class::Factory );
-
+ 
  sub read  { die "Define read() in implementation" }
  sub write { die "Define write() in implementation" }
  sub get   { die "Define get() in implementation" }
  sub set   { die "Define set() in implementation" }
-
+ 
  __PACKAGE__->register_factory_type( ini  => 'My::IniReader' );
  __PACKAGE__->register_factory_type( perl => 'My::PerlReader' );
-
+ 
  1;
 
-We just changed the calls from C<add_factory_type()> to
-C<register_factory_type>. This way you can leave the actual inclusion
-of the module for people who would actually use it. For our
-configuration example we might have:
+This way you can leave the actual inclusion of the module for people
+who would actually use it. For our configuration example we might
+have:
 
  My::ConfigFactory->register_factory_type( SOAP => 'My::Config::SOAP' );
 
@@ -348,15 +369,22 @@ Piece of cake:
  package My::Factory;
  use base qw( Class::Factory );
 
+or the old-school:
+
+ package My::Factory;
+ use Class::Factory;
+ @My::Factory::ISA = qw( Class::Factory );
+
 You can also override two methods for logging/error handling. There
 are a few instances where C<Class::Factory> may generate a warning
 message, or even a fatal error.  Internally, these are handled using
 C<warn> and C<die>, respectively.
 
-This may not always be what you want though.  Maybe you have a different
-logging facility you wish to use.  Perhaps you have a more sophisticated method
-of handling errors.  If this is the case, you are welcome to override either of
-these methods.
+This may not always be what you want though.  Maybe you have a
+different logging facility you wish to use.  Perhaps you have a more
+sophisticated method of handling errors (like
+L<Log::Log4perl|Log::Log4perl>.  If this is the case, you are welcome
+to override either of these methods.
 
 Currently, these two methods are implemented like the following:
 
@@ -373,28 +401,30 @@ override C<factory_log> like so:
      $logger->warn( @_ );
  }
 
-=head2 Common Usage Pattern
+=head2 Common Usage Pattern: Initializing from the constructor
 
-This is a very common pattern. Subclasses create an C<init()>
-method that gets called when the object is created:
+This is a very common pattern: Subclasses create an C<init()> method
+that gets called when the object is created:
 
  package My::Factory;
-
+ 
  use strict;
  use base qw( Class::Factory );
-
+ 
  1;
 
-And here is what a subclass might look like:
+And here is what a subclass might look like -- note that it doesn't
+have to subclass C<My::Factory> as our earlier examples did:
 
  package My::Subclass;
-
+ 
  use strict;
  use base qw( Class::Accessor );
+ 
  my @CONFIG_FIELDS = qw( status created_on created_by updated_on updated_by );
  my @FIELDS = ( 'filename', @CONFIG_FIELDS );
  My::Subclass->mk_accessors( @FIELDS );
-
+ 
  # Note: we have taken the flattened C<@params> passed in and assigned
  # the first element as C<$filename> and the other element as a
  # hashref C<$params>
@@ -426,13 +456,13 @@ Many times you will want the parent class to automatically register
 the types it knows about:
 
  package My::Factory;
-
+ 
  use strict;
  use base qw( Class::Factory );
-
+ 
  My::Factory->register_factory_type( type1 => 'My::Impl::Type1' );
- My::Factory->register_factory_type( type2 => 'My::Impl::Type1' );
-
+ My::Factory->register_factory_type( type2 => 'My::Impl::Type2' );
+ 
  1;
 
 This allows the default types to be registered when the factory is
@@ -443,7 +473,7 @@ more registering/adding:
 
  use strict;
  use My::Factory;
-
+ 
  my $impl1 = My::Factory->new( 'type1' );
  my $impl2 = My::Factory->new( 'type2' );
 
@@ -456,14 +486,21 @@ This is a default constructor you can use. It is quite simple:
  sub new {
      my ( $pkg, $type, @params ) = @_;
      my $class = $pkg->get_factory_class( $type );
+     return undef unless ( $class );
      my $self = bless( {}, $class );
      return $self->init( @params );
  }
 
-We just create a new object of the class associated (from an earlier
-call to C<add|register_factory_type()>) with C<$type> and then call
-the C<init()> method of that object. The C<init()> method should
-return the object, or die on error.
+We just create a new object as a blessed hashref of the class
+associated (from an earlier call to C<add_factory_type()> or
+C<register_factory_type()>) with C<$type> and then call the C<init()>
+method of that object. The C<init()> method should return the object,
+or die on error.
+
+If we do not get a class name from C<get_factory_class()> we issue a
+C<factory_error()> message which typically means we throw a
+C<die>. However, if you've overridden C<factory_error()> and do not
+die, this factory call will return C<undef>.
 
 B<get_factory_class( $object_type )>
 
@@ -476,7 +513,8 @@ C<require> bubble up to the caller. If there are no errors, the class
 is returned.
 
 Returns: name of class. If a class matching C<$object_type> is not
-found or cannot be C<require>d, then a C<die()> is thrown.
+found or cannot be C<require>d, then a C<die()> (or more specifically,
+a C<factory_error()>) is thrown.
 
 B<add_factory_type( $object_type, $object_class )>
 
@@ -486,9 +524,9 @@ running this the factory class will be able to create new objects of
 type C<$object_type>.
 
 Returns: name of class added if successful. If the proper parameters
-are not given or if we cannot find C<$object_class> in @INC, then a
-C<die()> is thrown. A C<warn>ing is issued if the type has already
-been added.
+are not given or if we cannot find C<$object_class> in @INC, then we
+call C<factory_error()>. A C<factory_log()> message is issued if the
+type has already been added.
 
 B<register_factory_type( $object_type, $object_class )>
 
@@ -497,8 +535,9 @@ dynamically included (using C<add_factory_type()> at the first request
 for an instance of that type.
 
 Returns: name of class registered if successful. If the proper
-parameters are not given then a C<die()> is thrown. A C<warn>ing is
-issued if the type has already been registered.
+parameters are not given then we call C<factory_error()>. A
+C<factory_log()> message is issued if the type has already been
+registered.
 
 B<get_loaded_classes()>
 
@@ -528,9 +567,19 @@ Note that a type can be both registered and loaded since we do not
 clear out the registration once a registered type has been loaded on
 demand.
 
+B<factory_log( @message )>
+
+Used internally instead of C<warn> so subclasses can override. Default
+implementation just uses C<warn>.
+
+B<factory_error( @message )>
+
+Used internally instead of C<die> so subclasses can override. Default
+implementation just uses C<die>.
+
 =head1 COPYRIGHT
 
-Copyright (c) 2002 Chris Winters. All rights reserved.
+Copyright (c) 2002-2004 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

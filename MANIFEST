@@ -8,3 +8,4 @@ t/MyCountryBand.pm
 t/MyRockBand.pm
 t/MySimpleBand.pm
 
+META.yml                                Module meta-data (added by MakeMaker)
