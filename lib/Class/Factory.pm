@@ -70,6 +70,8 @@ sub get_factory_map  { return undef }
 
 __END__
 
+=pod
+
 =head1 NAME
 
 Class::Factory - Base class for dynamic factory classes
