@@ -45,7 +45,7 @@ sub add_factory_type {
         die "Cannot add factory type [$factory_type] to class [$class]: ",
             "factory class [$factory_class] cannot be required [$@]\n";
     }
-    my $map = $item->get_factory_map;
+
     if ( ref $map eq 'HASH' ) {
         $map->{ $factory_type } = $factory_class;
     }
