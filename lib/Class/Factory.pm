@@ -70,10 +70,9 @@ sub get_factory_map  { return undef }
 
 __END__
 
-
 =head1 NAME
 
-Class::Factory - Base class for factory classes
+Class::Factory - Base class for dynamic factory classes
 
 =head1 SYNOPSIS
 
@@ -107,7 +106,7 @@ Class::Factory - Base class for factory classes
 
   # Add our default types
 
-  My::Factory->add_factory_type( perl => 'My::Factory::Perl' );
+  My::Factory->add_factory_type( perl  => 'My::Factory::Perl' );
   My::Factory->add_factory_type( blech => 'My::Factory::Blech' );
 
   1;
@@ -123,17 +122,116 @@ This is a simple module that factory classes can use to generate new
 types of objects on the fly, providing a consistent interface to
 common groups of objects.
 
-Implementation for subclasses is very simple. The base class defines
-two methods for subclasses to use: C<get_factory_class()> and
-C<add_factory_type()>. Subclasses must define either
-C<get_factory_map()> or both C<get_factory_type()> and
+Factory classes are used when you have different implementations for
+the same set of tasks but may not know in advance what implementations
+you will be using. For instance, take configuration files. There are
+four basic operations you would want to do with any configuration
+file: read it in, lookup a value, set a value, write it out. There are
+also many different types of configuration files, and you may want
+users to be able to provide an implementation for their own home-grown
+configuration format.
+
+With a factory class this is easy. To create the factory class, just
+subclass C<Class::Factory> and create an interface for your
+configuration serializer:
+
+ package My::ConfigFactory;
+
+ use strict;
+ use base qw( Class::Factory );
+
+ my %TYPES = ();
+ sub get_factory_map { return \%TYPES }
+
+ sub new {
+     my ( $class, $type, $filename, @params ) = @_;
+     my $factory_class = $class->get_factory_class( $type );
+     my $self = bless( {}, $factory_class );
+     return $self->initialize( $filename, @params );
+ }
+
+ sub read  { die "Define read() in implementation" }
+ sub write { die "Define write() in implementation" }
+ sub get   { die "Define get() in implementation" }
+ sub set   { die "Define set() in implementation" }
+
+ 1;
+
+And then users can add their own subclasses:
+
+ package My::CustomConfig;
+
+ use strict;
+ use base qw( My::ConfigFactory );
+
+ sub initialize {
+     my ( $self, $filename, $params ) = @_;
+     if ( $params->{base_url} ) {
+         $self->read_from_web( join( '/', $params->{base_url}, $filename ) );
+     }
+     else {
+         $self->read( $filename );
+     }
+     return $self;
+ }
+
+ sub read  { ... implementation to read a file ... }
+ sub write { ... implementation to write a file ...  }
+ sub get   { ... implementation to get a value ... }
+ sub set   { ... implementation to set a value ... }
+
+ sub read_from_web { ... implementation to read via http ... }
+
+ 1;
+
+(Normally you probably would not make your factory the same as your
+interface, but this is an abbreviated example.)
+
+So now users can use the custom configuration with something like:
+
+ #!/usr/bin/perl
+
+ use strict;
+ use My::ConfigFactory;
+
+ My::ConfigFactory->add_factory_type( 'custom' => 'My::CustomConfig' );
+
+ my $config = My::ConfigFactory->new( 'custom', 'myconf.dat' );
+
+This might not seem like a very big win, and for small standalone
+applications it is not. But when you develop large applications the
+C<add_factory_type()> step will almost certainly be done at
+application initialization time as a result of processing metadata
+about the instantiation of the application. And then users of the
+application can access the different types as if they are part of the
+system.
+
+As you see in the example above, implementation for subclasses is very
+simple. The base class defines two methods for subclasses to use:
+C<get_factory_class()> and C<add_factory_type()>. Subclasses must
+define either C<get_factory_map()> or both C<get_factory_type()> and
 C<set_factory_type()>.
 
 =head1 METHODS
 
-B<get_factory_class( $factory_type )>
+B<get_factory_class( $object_type )>
 
-B<add_factory_type( $factory_type, $factory_class )>
+Usually called from a constructor when you want to lookup a class by a
+type and create a new object of C<$object_type>.
+
+Returns: name of class. If a class matching C<$object_type> is not
+found, then a C<die()> is thrown.
+
+B<add_factory_type( $object_type, $object_class )>
+
+Tells the factory to dynamically add a new type to its stable and
+brings in the class implementing that type using C<require()>. After
+running this the factory class will be able to create new objects of
+type C<$object_type>.
+
+Returns: name of class added if successful. If the proper parameters
+are not given or if we cannot find C<$object_class> in @INC, then a
+C<die()> is thrown.
 
 =head1 SUBCLASSING
 
@@ -161,8 +259,8 @@ methods:
  }
 
  sub set_factory_class {
-     my ( $class, $type, $factory_class ) = @_;
-     return $TYPES{ $type } = $factory_class;
+     my ( $class, $type, $object_class ) = @_;
+     return $TYPES{ $type } = $object_class;
  }
 
 How these methods work is entirely up to you -- maybe
@@ -185,8 +283,8 @@ method that gets called when the object is created:
 
  sub new {
      my ( $class, $type, @params ) = @_;
-     my $factory_class = $class->get_factory_class( $type );
-     my $self = bless( {}, $factory_class );
+     my $object_class = $class->get_factory_class( $type );
+     my $self = bless( {}, $object_class );
      return $self->initialize( @params );
  }
 
@@ -197,7 +295,8 @@ And here is what a subclass might look like:
  package My::Subclass;
 
  use base qw( Class::Accessor );
- my @FIELDS = qw( filename status );
+ my @CONFIG_FIELDS = qw( status created_on created_by updated_on updated_by );
+ my @FIELDS = ( 'filename', @CONFIG_FIELDS );
  My::Subclass->mk_accessors( @FIELDS );
 
  # Note: we've taken the flattened C<@params> passed in and assigned
@@ -209,7 +308,9 @@ And here is what a subclass might look like:
      unless ( -f $filename ) {
          die "Filename [$filename] does not exist. Object cannot be created";
      }
-     foreach my $field ( @FIELDS ) {
+     $self->filename( filename );
+     $self->read_file_contents;
+     foreach my $field ( @CONFIG_FIELDS ) {
          $self->{ $field } = $params->{ $field } if ( $params->{ $field } );
      }
      return $self;
@@ -224,7 +325,9 @@ it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<perl>.
+"Design Patterns", by Erich Gamma, Richard Helm, Ralph Johnson and
+John Vlissides. Addison Wesley Longman, 1995. Specifically, the
+'Factory Method' pattern at pp. 107-116.
 
 =head1 AUTHOR
 
