@@ -4,56 +4,74 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '0.01';
+$Class::Factory::VERSION = '0.02';
 
+# Simple constructor -- override as needed
+
+sub new {
+    my ( $pkg, $type, @params ) = @_;
+    my $class = $pkg->get_factory_class( $type );
+    my $self = bless( {}, $class );
+    return $self->init( @params );
+}
+
+
+# Subclasses should override, but if they don't they shouldn't be
+# penalized...
+
+sub init { return $_[0] }
+
+# Find the class associated with $object_type
 
 sub get_factory_class {
-    my ( $item, $factory_type ) = @_;
+    my ( $item, $object_type ) = @_;
     my $class = ref $item || $item;
     my $map = $item->get_factory_map;
     my $factory_class = ( ref $map eq 'HASH' )
-                          ? $map->{ $factory_type }
-                          : $item->get_factory_type( $factory_type );
+                          ? $map->{ $object_type }
+                          : $item->get_factory_type( $object_type );
     unless ( $factory_class ) {
-        die "Factory type [$factory_type] is not defined in [$class]\n";
+        die "Factory type [$object_type] is not defined in [$class]\n";
     }
     return $factory_class;
 }
 
 
+# Associate $object_type with $object_class
+
 sub add_factory_type {
-    my ( $item, $factory_type, $factory_class ) = @_;
+    my ( $item, $object_type, $object_class ) = @_;
     my $class = ref $item || $item;
-    unless ( $factory_type )  {
+    unless ( $object_type )  {
         die "Cannot add factory type to [$class]: no type defined\n";
     }
-    unless ( $factory_class ) {
-        die "Cannot add factory type [$factory_type] to [$class]: no class defined\n";
+    unless ( $object_class ) {
+        die "Cannot add factory type [$object_type] to [$class]: no class defined\n";
     }
 
     my $map = $item->get_factory_map;
-    my $set_factory_class = ( ref $map eq 'HASH' )
-                              ? $map->{ $factory_type }
-                              : $item->get_factory_type( $factory_type );
-    if ( $set_factory_class ) {
-        warn "Attempt to add type [$factory_type] to [$class] redundant; ",
-             "type already exists with class [$set_factory_class]\n";
+    my $set_object_class = ( ref $map eq 'HASH' )
+                              ? $map->{ $object_type }
+                              : $item->get_factory_type( $object_type );
+    if ( $set_object_class ) {
+        warn "Attempt to add type [$object_type] to [$class] redundant; ",
+             "type already exists with class [$set_object_class]\n";
         return;
     }
 
-    eval "require $factory_class";
+    eval "require $object_class";
     if ( $@ ) {
-        die "Cannot add factory type [$factory_type] to class [$class]: ",
-            "factory class [$factory_class] cannot be required [$@]\n";
+        die "Cannot add factory type [$object_type] to class [$class]: ",
+            "factory class [$object_class] cannot be required [$@]\n";
     }
 
     if ( ref $map eq 'HASH' ) {
-        $map->{ $factory_type } = $factory_class;
+        $map->{ $object_type } = $object_class;
     }
     else {
-        $item->set_factory_type( $factory_type, $factory_class );
+        $item->set_factory_type( $object_type, $object_class );
     }
-    return $factory_class;
+    return $object_class;
 }
 
 
@@ -101,14 +119,6 @@ Class::Factory - Base class for dynamic factory classes
       $TYPES{ $type } = $factory_class;
   }
 
-  # Simple factory constructor
-
-  sub new {
-      my ( $class, $type, $params ) = @_;
-      my $factory_class = $class->get_factory_class( $type );
-      return bless( $params, $factory_class );
-  }
-
   # Add our default types
 
   My::Factory->add_factory_type( perl  => 'My::Factory::Perl' );
@@ -138,7 +148,8 @@ configuration format.
 
 With a factory class this is easy. To create the factory class, just
 subclass C<Class::Factory> and create an interface for your
-configuration serializer:
+configuration serializer. C<Class::Factory> even provides a simple
+constructor for you:
 
  package My::ConfigFactory;
 
@@ -147,13 +158,6 @@ configuration serializer:
 
  my %TYPES = ();
  sub get_factory_map { return \%TYPES }
-
- sub new {
-     my ( $class, $type, $filename, @params ) = @_;
-     my $factory_class = $class->get_factory_class( $type );
-     my $self = bless( {}, $factory_class );
-     return $self->initialize( $filename, @params );
- }
 
  sub read  { die "Define read() in implementation" }
  sub write { die "Define write() in implementation" }
@@ -169,7 +173,7 @@ And then users can add their own subclasses:
  use strict;
  use base qw( My::ConfigFactory );
 
- sub initialize {
+ sub init {
      my ( $self, $filename, $params ) = @_;
      if ( $params->{base_url} ) {
          $self->read_from_web( join( '/', $params->{base_url}, $filename ) );
@@ -217,6 +221,22 @@ define either C<get_factory_map()> or both C<get_factory_type()> and
 C<set_factory_type()>.
 
 =head1 METHODS
+
+B<new( $type, @params )>
+
+This is a default constructor you can use. It is quite simple:
+
+ sub new {
+     my ( $pkg, $type, @params ) = @_;
+     my $class = $pkg->get_factory_class( $type );
+     my $self = bless( {}, $class );
+     return $self->init( @params );
+ }
+
+We just create a new object of the class associated (from an earlier
+call to C<add_factory_type()>) with C<$type> and then call the
+C<init()> method of that object. The C<init()> method should return
+the object, or die on error.
 
 B<get_factory_class( $object_type )>
 
@@ -275,22 +295,16 @@ returning the class. Whatever floats your boat.
 
 =head2 Common Pattern
 
-This is a very common pattern. Subclasses create an C<initialize()>
+This is a very common pattern. Subclasses create an C<init()>
 method that gets called when the object is created:
 
  package My::Factory;
 
+ use strict;
  use base qw( Class::Factory );
 
  my %TYPES = ();
  sub get_factory_map { return \%TYPES }
-
- sub new {
-     my ( $class, $type, @params ) = @_;
-     my $object_class = $class->get_factory_class( $type );
-     my $self = bless( {}, $object_class );
-     return $self->initialize( @params );
- }
 
  1;
 
@@ -298,6 +312,7 @@ And here is what a subclass might look like:
 
  package My::Subclass;
 
+ use strict;
  use base qw( Class::Accessor );
  my @CONFIG_FIELDS = qw( status created_on created_by updated_on updated_by );
  my @FIELDS = ( 'filename', @CONFIG_FIELDS );
@@ -307,7 +322,7 @@ And here is what a subclass might look like:
  # the first element as C<$filename> and the other element as a
  # hashref C<$params>
 
- sub initialize {
+ sub init {
      my ( $self, $filename, $params ) = @_;
      unless ( -f $filename ) {
          die "Filename [$filename] does not exist. Object cannot be created";
@@ -319,6 +334,14 @@ And here is what a subclass might look like:
      }
      return $self;
  }
+
+The parent class (C<My::Factory>) has made as part of its definition
+that the only parameters to be passed to the C<init()> method are
+C<$filename> and C<$params>, in that order. It could just as easily
+have specified a single hashref parameter.
+
+These sorts of specifications are informal and not enforced by this
+C<Class::Factory>.
 
 =head1 COPYRIGHT
 
