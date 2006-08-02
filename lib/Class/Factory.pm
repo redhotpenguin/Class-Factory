@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.03';
+$Class::Factory::VERSION = '1.04';
 
 my %CLASS_BY_FACTORY_AND_TYPE  = ();
 my %FACTORY_INFO_BY_CLASS      = ();

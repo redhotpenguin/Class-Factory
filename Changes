@@ -1,5 +1,10 @@
 Revision history for Perl extension Class::Factory.
 
+1.04  Tue Aug  1 22:26:15 PST 2006
+      
+      - New maintainer, Fred Moyer <fred@redhotpenguin.com>
+	  - Add Devel::Cover support, current coverage is 71%
+
 1.03  Thu Oct 14 10:08:08 EDT 2004
 
       - Added 'get_my_factory()' and 'get_my_factory_type()' at
