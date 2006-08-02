@@ -60,14 +60,16 @@ group given English toffees in place had the same effects.
 
 COPYRIGHT AND LICENCE
 
-Copyright (c) 2002-2004 Chris Winters. All rights reserved.
+Copyright (c) 2002-2006 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 AUTHORS
 
-Chris Winters <chris@cwinters.com>
+Fred Moyer <fred@redhotpenguin.com> is the current maintainer.
+
+Chris Winters <chris@cwinters.com> is the author of Class::Factory.
 
 Eric Andreychek <eric@openthought.net> also helped out with code,
 testing and good advice.
