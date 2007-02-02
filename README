@@ -37,6 +37,10 @@ Class::Factory - Base class for dynamic factory classes
   My::Factory->register_factory_type( bleededge => 'Other::Customized::Class' );
   my $edgy_object = My::Factory->new( 'bleededge', this => 'that' );
 
+  # Get a registered class name given it's factory type
+  
+  my $registered_class = MyFactory->get_registered_class( 'bleededge' );
+
 See POD for details
 
 INSTALLATION
@@ -53,6 +57,8 @@ DEPENDENCIES
 None, although this module was written almost entirely under the
 influence of Weezer.
 
+get_registered_class() was written under the influence of Phix.
+
 SIDE-EFFECTS
 
 May include headache, insomnia, and growth spurts, although a control
@@ -60,7 +66,7 @@ group given English toffees in place had the same effects.
 
 COPYRIGHT AND LICENCE
 
-Copyright (c) 2002-2006 Chris Winters. All rights reserved.
+Copyright (c) 2002-2007 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -76,3 +82,6 @@ testing and good advice.
 
 Srdjan Jankovic <srdjan@catalyst.net.nz> contributed the idea for
 'get_my_factory()' and 'get_my_factory_type()'
+
+Sebastian Knapp <giftnuss@netscape.net> contributed the idea for
+'get_registered_class()'
