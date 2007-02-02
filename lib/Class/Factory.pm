@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.04';
+$Class::Factory::VERSION = '1.05';
 
 my %CLASS_BY_FACTORY_AND_TYPE  = ();
 my %FACTORY_INFO_BY_CLASS      = ();
@@ -144,6 +144,17 @@ sub get_registered_classes {
     return sort values %{ $REGISTER{ $class } };
 }
 
+sub get_registered_class {
+	my ( $item, $type ) = @_;
+	unless ( $type ) {
+	    warn("No factory type passed");
+		return undef;
+	}
+    my $class = ref $item || $item;
+    return undef unless ( ref $REGISTER{ $class } eq 'HASH' );
+	return $REGISTER{ $class }{ $type };
+}
+
 sub get_registered_types {
     my ( $item ) = @_;
     my $class = ref $item || $item;
@@ -230,6 +241,10 @@ Class::Factory - Base class for dynamic factory classes
   my @loaded_types       = My::Factory->get_loaded_types;
   my @registered_classes = My::Factory->get_registered_classes;
   my @registered_types   = My::Factory->get_registered_types;
+
+  # Get a registered class by it's factory type
+  
+  my $registered_class = My::Factory->get_registered_class( 'type' );
 
  # Ask the object created by the factory: Where did I come from?
  
@@ -605,6 +620,12 @@ Note that a class can be both registered and loaded since we do not
 clear out the registration once a registered class has been loaded on
 demand.
 
+B<get_registered_class( $factory_type )>
+
+Returns a registered class given a factory type.
+If no class of type $factory_type is registered, returns undef.
+If no classes have been registered yet, returns undef.
+
 B<get_registered_types()>
 
 Returns a sorted list of the types that were ever registered. If no
@@ -667,7 +688,7 @@ which would print:
 
 =head1 COPYRIGHT
 
-Copyright (c) 2002-2004 Chris Winters. All rights reserved.
+Copyright (c) 2002-2006 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -687,3 +708,6 @@ log/error capability and prodded the module into a simpler design.
 
 Srdjan Jankovic E<lt>srdjan@catalyst.net.nzE<gt> contributed the idea
 for 'get_my_factory()' and 'get_my_factory_type()'
+
+Sebastian Knapp <giftnuss@netscape.net> contributed the idea for
+'get_registered_class()'
