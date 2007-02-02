@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 32;
+use Test::More  tests => 33;
 
 use lib qw( ./t ./lib );
 
@@ -37,6 +37,9 @@ my $country_genre = 'COUNTRY';
     my @registered_types = MySimpleBand->get_registered_types;
     is( scalar @registered_types, 1, 'Number of types registered so far' );
     is( $registered_types[0], 'country', 'Default type registered' );
+    
+	my $registered_class = MySimpleBand->get_registered_class( 'country' );
+    is( $registered_class, 'MyCountryBand', 'Get registered class from type');
 
     my $rock = MySimpleBand->new( 'rock', { band_name => $rock_band } );
     is( ref( $rock ), 'MyRockBand', 'Type of added object returned' );

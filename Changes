@@ -1,9 +1,14 @@
 Revision history for Perl extension Class::Factory.
 
-1.04  Tue Aug  1 22:26:15 PST 2006
+1.05  Thu Feb   1 22:57:21 PST 2007
+      - Added method get_registered_class(), suggested by 
+        Sebastian Knapp <giftnuss@netscape.net>
+
+1.04  Mon Aug  20 22:26:15 PST 2006
       
       - New maintainer, Fred Moyer <fred@redhotpenguin.com>
-	  - Add Devel::Cover support, current coverage is 71%
+      - Add Devel::Cover support, current coverage is 71%
+      - Moved check for Test::More to MY::test
 
 1.03  Thu Oct 14 10:08:08 EDT 2004
 
@@ -75,7 +80,7 @@ Revision history for Perl extension Class::Factory.
 
 
 0.01  Mon Jan 28 08:35:09 EST 2002
-	
+    
       Original version with tests, documentation and everything,
       written after the third or fourth time I cut-and-pasted a
       'add_type()' method to implement a dynamic factory class :-)
