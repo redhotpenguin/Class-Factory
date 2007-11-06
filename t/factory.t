@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 36;
+use Test::More  tests => 39;
 
 use lib qw( ./t ./lib );
 
@@ -116,4 +116,11 @@ my $country_genre = 'COUNTRY';
     MySimpleBand->add_factory_type( rock => 'MyRockBand' );
     is( $MySimpleBand::log_msg, '', 'no warning after re-adding factory type');
 
+    is(MySimpleBand->get_factory_type_for('MyRockBand'), 'rock',
+        'Factory type retrievable for any given class');
+    is(MySimpleBand->get_factory_type_for($rock), 'rock',
+        'Factory type retrievable for any given object');
+
+    is(MySimpleBand->get_factory_type_for('MyJPopBand'), undef,
+        'Factory type undef for unknown class');
 }

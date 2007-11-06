@@ -1,8 +1,8 @@
 Revision history for Perl extension Class::Factory.
 
 1.06  Tue Nov   6 21:16:07 CET 2007
-      - Added remove_factory_type() and unregister_factory_type(). Marcel
-        Gruenauer <marcel@cpan.org>
+      - Added remove_factory_type(), unregister_factory_type() and
+        get_factory_type_for(). Marcel Gruenauer <marcel@cpan.org>
 
 1.05  Thu Feb   1 22:57:21 PST 2007
       - Added method get_registered_class(), suggested by 
