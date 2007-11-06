@@ -7,5 +7,6 @@ t/factory.t
 t/MyCountryBand.pm
 t/MyRockBand.pm
 t/MySimpleBand.pm
+t/MyFlexibleBand.pm
 
 META.yml                                Module meta-data (added by MakeMaker)
