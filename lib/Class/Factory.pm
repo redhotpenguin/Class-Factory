@@ -4,7 +4,7 @@ package Class::Factory;
 
 use strict;
 
-$Class::Factory::VERSION = '1.05';
+$Class::Factory::VERSION = '1.06';
 
 my %CLASS_BY_FACTORY_AND_TYPE  = ();
 my %FACTORY_INFO_BY_CLASS      = ();
@@ -222,6 +222,14 @@ sub get_my_factory {
 
 sub get_my_factory_type {
     my ( $item ) = @_;
+    $item->get_factory_type_for($item);
+}
+
+
+# Return the type that the factory uses to create a given object or class.
+
+sub get_factory_type_for {
+    my ( $self, $item ) = @_;
     my $impl_class = ref( $item ) || $item;
     my $impl_info = $FACTORY_INFO_BY_CLASS{ $impl_class };
     if ( ref( $impl_info ) eq 'ARRAY' ) {
@@ -668,6 +676,11 @@ C<register_factory_type()>. No return value.
 Unregistering a factory type is useful if a subclass of the factory wants to
 redefine the mapping for the factory type. C<register_factory_type()> doesn't
 allow overriding a factory type, so you have to unregister it first.
+
+B<get_factory_type_for( $class )>
+
+Takes an object or a class name string and returns the factory type that is
+used to construct that class. Returns undef if there is no such factory type.
 
 B<get_loaded_classes()>
 
