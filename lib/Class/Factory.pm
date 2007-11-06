@@ -123,6 +123,48 @@ sub register_factory_type {
 }
 
 
+sub remove_factory_type {
+    my ( $item, @object_types ) = @_;
+    my $class = ref $item || $item;
+
+    for my $object_type (@object_types) {
+        unless ( $object_type )  {
+            $item->factory_error(
+                "Cannot remove factory type from '$class': no type defined"
+            );
+        }
+
+        delete $CLASS_BY_FACTORY_AND_TYPE{ $class }->{ $object_type };
+    }
+}
+
+
+sub unregister_factory_type {
+    my ( $item, @object_types ) = @_;
+    my $class = ref $item || $item;
+
+    for my $object_type (@object_types) {
+        unless ( $object_type )  {
+            $item->factory_error(
+                "Cannot remove factory type from '$class': no type defined"
+            );
+        }
+
+        delete $REGISTER{ $class }->{ $object_type };
+
+        # Also delete from $CLASS_BY_FACTORY_AND_TYPE because if the object
+        # type has already been instantiated, then it will have been processed
+        # by add_factory_type(), thus creating an entry in
+        # $CLASS_BY_FACTORY_AND_TYPE. We can call register_factory_type()
+        # again, but when we try to instantiate an object via
+        # get_factory_class(), it will find the old entry in
+        # $CLASS_BY_FACTORY_AND_TYPE and use that.
+
+        delete $CLASS_BY_FACTORY_AND_TYPE{ $class }->{ $object_type };
+    }
+}
+
+
 sub get_loaded_classes {
     my ( $item ) = @_;
     my $class = ref $item || $item;
@@ -246,13 +288,21 @@ Class::Factory - Base class for dynamic factory classes
   
   my $registered_class = My::Factory->get_registered_class( 'type' );
 
- # Ask the object created by the factory: Where did I come from?
+  # Ask the object created by the factory: Where did I come from?
  
- my $custom_object = My::Factory->new( 'custom' );
- print "Object was created by factory: ",
+  my $custom_object = My::Factory->new( 'custom' );
+  print "Object was created by factory: ",
        $custom_object->get_my_factory, " ",
        "and is of type: ",
        $custom_object->get_my_factory_type;
+
+  # Remove a factory type
+
+  My::Factory->remove_factory_type('perl');
+
+  # Unregister a factory type
+
+  My::Factory->unregister_factory_type('blech');
 
 =head1 DESCRIPTION
 
@@ -601,6 +651,24 @@ parameters are not given then we call C<factory_error()>. A
 C<factory_log()> message is issued if the type has already been
 registered.
 
+B<remove_factory_type( @object_types )>
+
+Removes a factory type from the factory. This is the opposite of
+C<add_factory_type()>. No return value.
+
+Removing a factory type is useful if a subclass of the factory wants to
+redefine the mapping for the factory type. C<add_factory_type()> doesn't allow
+overriding a factory type, so you have to remove it first.
+
+B<unregister_factory_type( @object_types )>
+
+Unregisters a factory type from the factory. This is the opposite of
+C<register_factory_type()>. No return value.
+
+Unregistering a factory type is useful if a subclass of the factory wants to
+redefine the mapping for the factory type. C<register_factory_type()> doesn't
+allow overriding a factory type, so you have to unregister it first.
+
 B<get_loaded_classes()>
 
 Returns a sorted list of the currently loaded classes. If no classes
@@ -711,3 +779,7 @@ for 'get_my_factory()' and 'get_my_factory_type()'
 
 Sebastian Knapp <giftnuss@netscape.net> contributed the idea for
 'get_registered_class()'
+
+Marcel Gruenauer <marcel@cpan.org> contributed the methods
+remove_factory_type() and unregister_factory_type().
+

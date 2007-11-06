@@ -41,6 +41,14 @@ Class::Factory - Base class for dynamic factory classes
   
   my $registered_class = MyFactory->get_registered_class( 'bleededge' );
 
+  # Remove a factory type
+
+  MyFactory->remove_factory_type('custom');
+
+  # Unregister a factory type
+
+  MyFactory->unregister_factory_type('bleededge');
+
 See POD for details
 
 INSTALLATION
@@ -85,3 +93,7 @@ Srdjan Jankovic <srdjan@catalyst.net.nz> contributed the idea for
 
 Sebastian Knapp <giftnuss@netscape.net> contributed the idea for
 'get_registered_class()'
+
+Marcel Gruenauer <marcel@cpan.org> contributed the methods
+remove_factory_type() and unregister_factory_type().
+

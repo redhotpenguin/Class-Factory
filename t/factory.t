@@ -1,7 +1,7 @@
 # -*-perl-*-
 
 use strict;
-use Test::More  tests => 33;
+use Test::More  tests => 36;
 
 use lib qw( ./t ./lib );
 
@@ -101,5 +101,19 @@ my $country_genre = 'COUNTRY';
     my $disco = MySimpleBand->new( 'disco', { shoes => 'white' } );
     ok( $MySimpleBand::error_msg =~ /^Cannot add factory type 'disco' to class 'MySimpleBand': factory class 'SomeKeyboardGuy' cannot be required:/,
         'Generated correct error message when instantiate object with nonexistent class registration' );
+
+    MySimpleBand->unregister_factory_type('country');
+    MySimpleBand->new( 'country', { band_name => $country_band } );
+    ok( $MySimpleBand::error_msg =~ /^Factory type 'country' is not defined in 'MySimpleBand'/,
+        'Error message for instantiating after the factory type was unregistered' );
+    
+    MySimpleBand->remove_factory_type('rock');
+    MySimpleBand->new( 'rock', { band_name => $rock_band } );
+    ok( $MySimpleBand::error_msg =~ /^Factory type 'rock' is not defined in 'MySimpleBand'/,
+        'Error message for instantiating after the factory type was removed' );
+    
+    $MySimpleBand::log_msg = '';
+    MySimpleBand->add_factory_type( rock => 'MyRockBand' );
+    is( $MySimpleBand::log_msg, '', 'no warning after re-adding factory type');
 
 }
