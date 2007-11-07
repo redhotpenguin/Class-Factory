@@ -769,7 +769,7 @@ which would print:
 
 =head1 COPYRIGHT
 
-Copyright (c) 2002-2006 Chris Winters. All rights reserved.
+Copyright (c) 2002-2007 Chris Winters. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -781,6 +781,8 @@ John Vlissides. Addison Wesley Longman, 1995. Specifically, the
 'Factory Method' pattern, pp. 107-116.
 
 =head1 AUTHORS
+
+Fred Moyer <fred@redhotpenguin.com> is the current maintainer.
 
 Chris Winters E<lt>chris@cwinters.comE<gt>
 
